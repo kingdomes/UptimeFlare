@@ -29,7 +29,6 @@ const workerConfig = {
       headers: {
         'User-Agent': 'Uptimeflare 114514',
       },
-    },
     // Example TCP Monitor
     {
       id: 'test_tcp_monitor',

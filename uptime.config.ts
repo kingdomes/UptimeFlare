@@ -62,7 +62,7 @@ const workerConfig: WorkerConfig = {
   checkProxyFallback: true, // 代理失败时回退本地检查
 },
    {
-  iid: 'foo_monitor',
+  id: 'foo_monitor',
   name: 'UptimeFlare',
   method: 'GET',
   target: 'https://serve.ong.pp.ua',

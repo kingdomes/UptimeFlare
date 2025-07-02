@@ -59,7 +59,7 @@ const workerConfig: WorkerConfig = {
     'User-Agent': 'Uptimeflare',
     Authorization: 'Bearer YOUR_TOKEN_HERE',
   },
-  body: 'Hello, world!', // 请求体
+  body: 'Hello, world!', // 请求
   responseKeyword: 'success', // 响应必须包含 "success"
   responseForbiddenKeyword: 'bad gateway', // 响应不能包含 "bad gateway"
   checkProxy: 'https://xxx.example.com OR worker://weur', // 使用代理检查

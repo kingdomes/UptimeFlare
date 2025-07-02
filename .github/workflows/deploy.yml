@@ -8,56 +8,63 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v2.0.3
         with:
           terraform_version: 1.6.4
 
       - name: Use Node.js 22.x
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
           node-version: 22.x
           cache: 'npm'
 
-      - name: Fetch Cloudflare Account ID
+      # Automatically get an account id via the API Token
+      # if secrets.CLOUDFLARE_ACCOUNT_ID is not set.
+      - name: Fetch Account ID
         id: fetch_account_id
         run: |
           if [[ -n "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]]; then
-            echo "Using provided CLOUDFLARE_ACCOUNT_ID."
-            echo "account_id=${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" >> "$GITHUB_OUTPUT"
+            ACCOUNT_ID="${{ secrets.CLOUDFLARE_ACCOUNT_ID }}"
+            echo "Using provided CLOUDFLARE_ACCOUNT_ID from secrets."
           else
-            ACCOUNT_ID=$(curl -sS -X GET "https://api.cloudflare.com/client/v4/accounts" \
-              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-              -H "Content-Type: application/json" | jq -r ".result[0].id")
-            if [[ -z "$ACCOUNT_ID" || "$ACCOUNT_ID" == "null" ]]; then
-              echo "Failed to fetch CLOUDFLARE_ACCOUNT_ID. Check CLOUDFLARE_API_TOKEN."
+            ACCOUNT_ID=$(curl -X GET "https://api.cloudflare.com/client/v4/accounts" -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H "Content-Type:application/json" | jq ".result[0].id" -r)
+            if [[ "$ACCOUNT_ID" == "null" ]]; then
+              echo "Failed to get an account id, please make sure you have set up CLOUDFLARE_API_TOKEN correctly!"
               exit 1
             fi
-            echo "account_id=$ACCOUNT_ID" >> "$GITHUB_OUTPUT"
           fi
+          echo 'account_id='$ACCOUNT_ID >> $GITHUB_OUTPUT
+
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
-      - name: Ensure Worker Subdomain Exists (Workaround)
+      # This is a temporary workaround to fix issue #13
+      # On a new Cloudflare account, the terraform apply will fail with `workers.api.error.subdomain_required`
+      # This may be due to the account not having a worker subdomain yet, so we create a dummy worker and then delete it.
+      # Cloudflare should allocate a worker subdomain after this.
+      # https://github.com/cloudflare/terraform-provider-cloudflare/issues/3304
+      - name: Create worker subdomain (temporary workaround)
+        id: create_dummy_worker
         run: |
-          echo "Ensuring Worker subdomain is initialized..."
-          curl -sS -X PUT \
-            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/dummy-init" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            -H "Content-Type: application/javascript" \
-            --data 'addEventListener("fetch", event => event.respondWith(new Response("OK")))'
-          curl -sS -X DELETE \
-            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/dummy-init" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"
+          curl --request PUT --fail-with-body \
+               --url https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/dummy-ib4db6ntj5csdef3 \
+               --header 'Authorization: Bearer '$CLOUDFLARE_API_TOKEN \
+               --header 'Content-Type: application/javascript' \
+               --data 'addEventListener('\''fetch'\'', (event) => event.respondWith(new Response('\''OK'\'')))'\
+
+          curl --request DELETE --fail-with-body \
+               --url https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/dummy-ib4db6ntj5csdef3 \
+               --header 'Authorization: Bearer '$CLOUDFLARE_API_TOKEN \
+               --header 'Content-Type: application/json'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ steps.fetch_account_id.outputs.account_id }}
 
-      - name: Install dependencies
+      - name: Install packages
         run: |
           npm install
           cd worker
@@ -72,85 +79,83 @@ jobs:
         run: |
           npx @cloudflare/next-on-pages
 
-      - name: Remove Durable Object Bindings Temporarily
+      - name: Remove durable objects bindings (temporary workaround)
         continue-on-error: true
+        # This is a workaround to fix Cloudflare provider 4.x import crash when there's a durable object binding.
         run: |
-          echo "Removing Durable Object bindings temporarily for Terraform compatibility..."
-          BINDINGS_RAW=$(curl -sS -X GET \
-            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/uptimeflare_worker/settings" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN")
-          echo "Bindings raw response: $BINDINGS_RAW"
-          NEW_BINDINGS=$(echo "$BINDINGS_RAW" | jq -c '.result.bindings // [] | map(select(.type != "durable_object_namespace"))')
+          # Get bindings without durable objects
+          NEW_BINDINGS=$(curl --request GET --fail-with-body \
+               --url https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/uptimeflare_worker/settings \
+               --header 'Authorization: Bearer '$CLOUDFLARE_API_TOKEN \
+               --header 'Content-Type: application/json' | jq '.result.bindings | map(select(.type != "durable_object_namespace"))' -jc)
           echo "New bindings: $NEW_BINDINGS"
-          curl -sS -X PATCH \
-            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/uptimeflare_worker/settings" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            -F "settings={\"bindings\":$NEW_BINDINGS}"
+
+          # Remove durable objects bindings
+          curl --request PATCH --fail-with-body \
+               --url https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/uptimeflare_worker/settings \
+               --header 'Authorization: Bearer '$CLOUDFLARE_API_TOKEN \
+               -F 'settings={"bindings":'$NEW_BINDINGS'}'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ steps.fetch_account_id.outputs.account_id }}
 
       - name: Deploy using Terraform
+        # As we don't save terraform state somewhere, we need to import the existing resources
         run: |
           terraform init
-          echo "Checking resources before import..."
-          KV_ID=$(curl -sS "https://api.cloudflare.com/client/v4/accounts/$TF_VAR_CLOUDFLARE_ACCOUNT_ID/storage/kv/namespaces?per_page=100" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | \
-            jq -r '.result[] | select(.title=="uptimeflare_kv") | .id')
+
+          KV_ID=$(curl https://api.cloudflare.com/client/v4/accounts/$TF_VAR_CLOUDFLARE_ACCOUNT_ID/storage/kv/namespaces\?per_page\=100 --header 'Authorization: Bearer '$CLOUDFLARE_API_TOKEN | jq -r '.result[] | select(.title == "uptimeflare_kv") | .id')
           if [ -n "$KV_ID" ]; then
-            echo "Importing KV namespace..."
-            terraform import cloudflare_workers_kv_namespace.uptimeflare_kv "$TF_VAR_CLOUDFLARE_ACCOUNT_ID/$KV_ID" || echo "KV import failed, continuing."
+            echo "Importing existing resources..."
+            terraform import cloudflare_workers_kv_namespace.uptimeflare_kv "$TF_VAR_CLOUDFLARE_ACCOUNT_ID/$KV_ID"
+            terraform import cloudflare_worker_script.uptimeflare "$TF_VAR_CLOUDFLARE_ACCOUNT_ID/uptimeflare_worker"
+            terraform import cloudflare_worker_cron_trigger.uptimeflare_worker_cron "$TF_VAR_CLOUDFLARE_ACCOUNT_ID/uptimeflare_worker"
+            terraform import cloudflare_pages_project.uptimeflare "$TF_VAR_CLOUDFLARE_ACCOUNT_ID/uptimeflare"
           else
-            echo "KV namespace not found, skipping import."
+            echo "KV namespace not found, first-time setup."
           fi
-          WORKER_EXISTS=$(curl -sS -X GET \
-            "https://api.cloudflare.com/client/v4/accounts/$TF_VAR_CLOUDFLARE_ACCOUNT_ID/workers/scripts/uptimeflare_worker" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | jq -r '.success')
-          if [ "$WORKER_EXISTS" = "true" ]; then
-            echo "Importing Worker script..."
-            terraform import cloudflare_worker_script.uptimeflare "$TF_VAR_CLOUDFLARE_ACCOUNT_ID/uptimeflare_worker" || echo "Worker script import failed, continuing."
-          else
-            echo "Worker script not found, skipping import."
-          fi
-          PAGES_EXISTS=$(curl -sS -X GET \
-            "https://api.cloudflare.com/client/v4/accounts/$TF_VAR_CLOUDFLARE_ACCOUNT_ID/pages/projects/uptimeflare" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | jq -r '.success')
-          if [ "$PAGES_EXISTS" = "true" ]; then
-            echo "Importing Pages project..."
-            terraform import cloudflare_pages_project.uptimeflare "$TF_VAR_CLOUDFLARE_ACCOUNT_ID/uptimeflare" || echo "Pages project import failed, continuing."
-          else
-            echo "Pages project not found, skipping import."
-          fi
-          echo "Skipping import of cloudflare_worker_cron_trigger (unsupported by provider)."
+
           terraform apply -auto-approve -input=false
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           TF_VAR_CLOUDFLARE_ACCOUNT_ID: ${{ steps.fetch_account_id.outputs.account_id }}
 
-      - name: Re-add Durable Object Bindings
+      # Terraform Cloudflare provider 4.x doesn't support durable objects, provider 5.x has unresolved issues blocking the deployment. (cloudflare/terraform-provider-cloudflare#5412)
+      # So I have to manually add durable objects bindings here.
+      - name: Add durable objects bindings
         run: |
-          echo "Re-adding Durable Object bindings..."
-          CURRENT_BINDINGS_RAW=$(curl -sS -X GET \
-            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/uptimeflare_worker/settings" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN")
-          echo "Current bindings raw response: $CURRENT_BINDINGS_RAW"
-          CURRENT_BINDINGS=$(echo "$CURRENT_BINDINGS_RAW" | jq '.result.bindings // []')
-          NEW_BINDINGS=$(jq -n --argjson current "$CURRENT_BINDINGS" '[{"type":"durable_object_namespace","name":"REMOTE_CHECKER_DO","class_name":"RemoteChecker"}] + $current')
-          echo "New bindings to set: $NEW_BINDINGS"
-          curl -sS -X PATCH \
-            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/uptimeflare_worker/settings" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            -F "settings={\"bindings\":$NEW_BINDINGS}"
-          curl -sS -X PATCH \
-            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/uptimeflare_worker/script-settings" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d '{"observability":{"enabled":true}}'
+          # Get current bindings
+          CURRENT_BINDINGS=$(curl --request GET --fail-with-body \
+               --url https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/uptimeflare_worker/settings \
+               --header 'Authorization: Bearer '$CLOUDFLARE_API_TOKEN \
+               --header 'Content-Type: application/json' | jq '.result.bindings' -jc)
+          CURRENT_BINDINGS="${CURRENT_BINDINGS:1:-1}"
+          echo "Current bindings: $CURRENT_BINDINGS"
+
+          # Try migration first (required for the new durable object class, ignore failures)
+          curl --request PATCH \
+               --url https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/uptimeflare_worker/settings \
+               --header 'Authorization: Bearer '$CLOUDFLARE_API_TOKEN \
+               -F 'settings={"bindings":[{"type":"durable_object_namespace","name":"REMOTE_CHECKER_DO","class_name":"RemoteChecker"},'$CURRENT_BINDINGS'],"migrations":{"new_sqlite_classes":["RemoteChecker"],"new_tag":"v1"}}'
+
+          # Actually add the binding
+          curl --request PATCH --fail-with-body \
+               --url https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/uptimeflare_worker/settings \
+               --header 'Authorization: Bearer '$CLOUDFLARE_API_TOKEN \
+               -F 'settings={"bindings":[{"type":"durable_object_namespace","name":"REMOTE_CHECKER_DO","class_name":"RemoteChecker"},'$CURRENT_BINDINGS']}'
+
+          # By the ways enable logs
+          curl --request PATCH \
+               --url https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/uptimeflare_worker/script-settings \
+               --header 'Authorization: Bearer '$CLOUDFLARE_API_TOKEN \
+               --header 'Content-Type: application/json' \
+               -d '{"observability":{"enabled":true}}'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ steps.fetch_account_id.outputs.account_id }}
 
-      - name: Upload Pages via Wrangler
+      # Currently Terraform Cloudflare provider doesn't support direct upload, use wrangler to upload instead.
+      - name: Upload pages
         run: |
           npx wrangler pages deploy .vercel/output/static --project-name uptimeflare
         env:

@@ -2,7 +2,7 @@ import { MaintenanceConfig, PageConfig, WorkerConfig } from './types/config'
 
 const pageConfig: PageConfig = {
   // Title for your status page
-  title: "lyc8503's Status Page",
+  title: "服务页面",
   // Links shown at the header of your status page, could set `highlight` to `true`
   links: [
     { link: 'https://github.com/kingdomes', label: 'GitHub' },
@@ -13,7 +13,7 @@ const pageConfig: PageConfig = {
   // If not specified, all monitors will be shown in a single list
   // If specified, monitors will be grouped and ordered, not-listed monitors will be invisble (but still monitored)
   group: {
-    '🌐 Public (example group name)': ['foo_monitor', 'bar_monitor', 'more monitor ids...'],
+    '🌐 Public': ['foo_monitor', 'bar_monitor', 'more monitor ids...'],
     '🔐 Private': ['test_tcp_monitor'],
   },
 }
@@ -32,7 +32,7 @@ const workerConfig: WorkerConfig = {
   target: 'https://ong.pp.ua',
   tooltip: '普通的校园墙',
   statusPageLink: 'https://ong.pp.ua',
-  hideLatencyChart: true,
+  hideLatencyChart: false,
   expectedCodes: [200],
   timeout: 10000,
   headers: {
@@ -50,7 +50,7 @@ const workerConfig: WorkerConfig = {
   target: 'https://ong.pp.ua',
   tooltip: '杂记',
   statusPageLink: 'https://115411.xyz',
-  hideLatencyChart: true,
+  hideLatencyChart: false,
   expectedCodes: [200],
   timeout: 10000,
   headers: {
@@ -68,7 +68,7 @@ const workerConfig: WorkerConfig = {
   target: 'https://serve.ong.pp.ua',
   tooltip: '普通的校园墙',
   statusPageLink: 'https://serve.ong.pp.ua',
-  hideLatencyChart: true,
+  hideLatencyChart: false,
   expectedCodes: [200],
   timeout: 10000,
   headers: {

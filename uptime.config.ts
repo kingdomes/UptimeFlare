@@ -44,7 +44,7 @@ const workerConfig: WorkerConfig = {
   responseForbiddenKeyword: 'bad gateway', // 响应不能包含 "bad gateway"
   checkProxy: 'https://xxx.example.com OR worker://weur', // 使用代理检查
   checkProxyFallback: true, // 代理失败时回退本地检查
-}
+},
    {
   id: 'foo_monitor', // 唯一 ID
   name: '📖Blog', // 监控名称
@@ -64,7 +64,7 @@ const workerConfig: WorkerConfig = {
   responseForbiddenKeyword: 'bad gateway', // 响应不能包含 "bad gateway"
   checkProxy: 'https://xxx.example.com OR worker://weur', // 使用代理检查
   checkProxyFallback: true, // 代理失败时回退本地检查
-}
+},
    {
   id: 'foo_monitor', // 唯一 ID
   name: 'UptimeFlare', // 监控名称
@@ -84,7 +84,7 @@ const workerConfig: WorkerConfig = {
   responseForbiddenKeyword: 'bad gateway', // 响应不能包含 "bad gateway"
   checkProxy: 'https://xxx.example.com OR worker://weur', // 使用代理检查
   checkProxyFallback: true, // 代理失败时回退本地检查
-}    
+},    
 // Example TCP Monitor
     {
       id: 'test_tcp_monitor',

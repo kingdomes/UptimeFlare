@@ -28,7 +28,7 @@ const workerConfig: WorkerConfig = {
     {
   id: 'foo_monitor', // 唯一 ID
   name: '🧱校园墙', // 监控名称
-  method: 'POST', // 使用 POST 方法
+  method: 'GET', // 使用 POST 方法
   target: 'https://ong.pp.ua', // 监控目标
   tooltip: '普通的校园墙', // 提示信息
   statusPageLink: 'https://ong.pp.ua', // 可点击的链接
@@ -48,7 +48,7 @@ const workerConfig: WorkerConfig = {
    {
   id: 'foo_monitor', // 唯一 ID
   name: '📖Blog', // 监控名称
-  method: 'POST', // 使用 POST 方法
+  method: 'GET', // 使用 POST 方法
   target: 'https://115411.xyz', // 监控目标
   tooltip: '杂记', // 提示信息
   statusPageLink: 'https://115411.xyz', // 可点击的链接
@@ -68,7 +68,7 @@ const workerConfig: WorkerConfig = {
    {
   id: 'foo_monitor', // 唯一 ID
   name: 'UptimeFlare', // 监控名称
-  method: 'POST', // 使用 POST 方法
+  method: 'GET', // 使用 POST 方法
   target: 'https://serve.ong.pp.ua', // 监控目标
   tooltip: '自己监控自己', // 提示信息
   statusPageLink: 'https://serve.ong.pp.ua', // 可点击的链接
@@ -88,13 +88,13 @@ const workerConfig: WorkerConfig = {
 // Example TCP Monitor
     {
       id: 'test_tcp_monitor',
-      name: 'Example TCP Monitor',
+      name: 'Router SSH',
       // `method` should be `TCP_PING` for tcp monitors
       method: 'TCP_PING',
       // `target` should be `host:port` for tcp monitors
-      target: '1.2.3.4:22',
-      tooltip: 'My production server SSH',
-      statusPageLink: 'https://example.com',
+      target: '52.65.31.188:22',
+      tooltip: 'TCP_PING',
+      statusPageLink: '',
       timeout: 5000,
     },
   ],

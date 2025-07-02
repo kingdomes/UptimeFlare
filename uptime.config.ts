@@ -26,63 +26,57 @@ const workerConfig: WorkerConfig = {
   // Define all your monitors here
   monitors: [
     {
-  id: 'foo_monitor', // 唯一 ID
-  name: '🧱校园墙', // 监控名称
-  method: 'GET', // 使用 POST 方法
-  target: 'https://ong.pp.ua', // 监控目标
-  tooltip: '普通的校园墙', // 提示信息
-  statusPageLink: 'https://ong.pp.ua', // 可点击的链接
-  hideLatencyChart: true, // 显示延迟图表
-  expectedCodes: [200], // 只接受 200 状态码
-  timeout: 10000, // 10 秒超时
-  headers: { // 自定义请求头
+  id: 'foo_monitor',
+  name: '🧱校园墙',
+  method: 'GET',
+  target: 'https://ong.pp.ua',
+  tooltip: '普通的校园墙',
+  statusPageLink: 'https://ong.pp.ua',
+  hideLatencyChart: true,
+  expectedCodes: [200],
+  timeout: 10000,
+  headers: {
     'User-Agent': 'Uptimeflare',
-    Authorization: 'Bearer YOUR_TOKEN_HERE',
   },
   body: 'Hello, world!', // 请求体
   responseKeyword: 'success', // 响应必须包含 "success"
   responseForbiddenKeyword: 'bad gateway', // 响应不能包含 "bad gateway"
-  checkProxy: 'https://xxx.example.com OR worker://weur', // 使用代理检查
   checkProxyFallback: true, // 代理失败时回退本地检查
 },
    {
-  id: 'foo_monitor', // 唯一 ID
-  name: '📖Blog', // 监控名称
-  method: 'GET', // 使用 POST 方法
-  target: 'https://115411.xyz', // 监控目标
-  tooltip: '杂记', // 提示信息
-  statusPageLink: 'https://115411.xyz', // 可点击的链接
-  hideLatencyChart: true, // 显示延迟图表
-  expectedCodes: [200], // 只接受 200 状态码
-  timeout: 10000, // 10 秒超时
-  headers: { // 自定义请求头
+  id: 'foo_monitor',
+  name: '📖Blog',
+  method: 'GET',
+  target: 'https://ong.pp.ua',
+  tooltip: '杂记',
+  statusPageLink: 'https://115411.xyz',
+  hideLatencyChart: true,
+  expectedCodes: [200],
+  timeout: 10000,
+  headers: {
     'User-Agent': 'Uptimeflare',
-    Authorization: 'Bearer YOUR_TOKEN_HERE',
   },
   body: 'Hello, world!', // 请求
   responseKeyword: 'success', // 响应必须包含 "success"
   responseForbiddenKeyword: 'bad gateway', // 响应不能包含 "bad gateway"
-  checkProxy: 'https://xxx.example.com OR worker://weur', // 使用代理检查
   checkProxyFallback: true, // 代理失败时回退本地检查
 },
    {
-  id: 'foo_monitor', // 唯一 ID
-  name: 'UptimeFlare', // 监控名称
-  method: 'GET', // 使用 POST 方法
-  target: 'https://serve.ong.pp.ua', // 监控目标
-  tooltip: '自己监控自己', // 提示信息
-  statusPageLink: 'https://serve.ong.pp.ua', // 可点击的链接
-  hideLatencyChart: true, // 显示延迟图表
-  expectedCodes: [200], // 只接受 200 状态码
-  timeout: 10000, // 10 秒超时
-  headers: { // 自定义请求头
+  iid: 'foo_monitor',
+  name: 'UptimeFlare',
+  method: 'GET',
+  target: 'https://serve.ong.pp.ua',
+  tooltip: '普通的校园墙',
+  statusPageLink: 'https://serve.ong.pp.ua',
+  hideLatencyChart: true,
+  expectedCodes: [200],
+  timeout: 10000,
+  headers: {
     'User-Agent': 'Uptimeflare',
-    Authorization: 'Bearer YOUR_TOKEN_HERE',
   },
   body: 'Hello, world!', // 请求体
   responseKeyword: 'success', // 响应必须包含 "success"
   responseForbiddenKeyword: 'bad gateway', // 响应不能包含 "bad gateway"
-  checkProxy: 'https://xxx.example.com OR worker://weur', // 使用代理检查
   checkProxyFallback: true, // 代理失败时回退本地检查
 },    
 // Example TCP Monitor

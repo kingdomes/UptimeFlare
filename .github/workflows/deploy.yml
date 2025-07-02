@@ -76,10 +76,14 @@ jobs:
         continue-on-error: true
         run: |
           echo "Removing Durable Object bindings temporarily for Terraform compatibility..."
-          NEW_BINDINGS=$(curl -sS -X GET \
+          BINDINGS_RAW=$(curl -sS -X GET \
             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/uptimeflare_worker/settings" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | \
-            jq '.result.bindings | map(select(.type != "durable_object_namespace"))' -c)
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN")
+
+          NEW_BINDINGS=$(echo "$BINDINGS_RAW" | jq -c '.result.bindings // [] | map(select(.type != "durable_object_namespace"))')
+
+          echo "New bindings: $NEW_BINDINGS"
+
           curl -sS -X PATCH \
             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/uptimeflare_worker/settings" \
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
@@ -91,10 +95,8 @@ jobs:
       - name: Deploy using Terraform
         run: |
           terraform init
-
           echo "Checking resources before import..."
 
-          # KV Namespace
           KV_ID=$(curl -sS "https://api.cloudflare.com/client/v4/accounts/$TF_VAR_CLOUDFLARE_ACCOUNT_ID/storage/kv/namespaces?per_page=100" \
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | \
             jq -r '.result[] | select(.title=="uptimeflare_kv") | .id')
@@ -106,7 +108,6 @@ jobs:
             echo "KV namespace not found, skipping import."
           fi
 
-          # Worker Script
           WORKER_EXISTS=$(curl -sS -X GET \
             "https://api.cloudflare.com/client/v4/accounts/$TF_VAR_CLOUDFLARE_ACCOUNT_ID/workers/scripts/uptimeflare_worker" \
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | jq -r '.success')
@@ -118,7 +119,6 @@ jobs:
             echo "Worker script not found, skipping import."
           fi
 
-          # Pages Project
           PAGES_EXISTS=$(curl -sS -X GET \
             "https://api.cloudflare.com/client/v4/accounts/$TF_VAR_CLOUDFLARE_ACCOUNT_ID/pages/projects/uptimeflare" \
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | jq -r '.success')
@@ -140,14 +140,18 @@ jobs:
       - name: Re-add Durable Object Bindings
         run: |
           echo "Re-adding Durable Object bindings..."
-          CURRENT_BINDINGS=$(curl -sS -X GET \
+          CURRENT_BINDINGS_RAW=$(curl -sS -X GET \
             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/uptimeflare_worker/settings" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | jq '.result.bindings' -c)
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN")
+
+          CURRENT_BINDINGS=$(echo "$CURRENT_BINDINGS_RAW" | jq -c '.result.bindings // []')
+
+          NEW_BINDINGS=$(echo "[{\"type\":\"durable_object_namespace\",\"name\":\"REMOTE_CHECKER_DO\",\"class_name\":\"RemoteChecker\"}] + $CURRENT_BINDINGS" | jq -c 'add')
 
           curl -sS -X PATCH \
             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/uptimeflare_worker/settings" \
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            -F "settings={\"bindings\":[{\"type\":\"durable_object_namespace\",\"name\":\"REMOTE_CHECKER_DO\",\"class_name\":\"RemoteChecker\"}${CURRENT_BINDINGS:1:-1}]}"
+            -F "settings={\"bindings\":$NEW_BINDINGS}"
 
           curl -sS -X PATCH \
             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/uptimeflare_worker/script-settings" \

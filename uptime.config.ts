@@ -5,9 +5,9 @@ const pageConfig: PageConfig = {
   title: "lyc8503's Status Page",
   // Links shown at the header of your status page, could set `highlight` to `true`
   links: [
-    { link: 'https://github.com/lyc8503', label: 'GitHub' },
-    { link: 'https://blog.lyc8503.net/', label: 'Blog' },
-    { link: 'mailto:me@lyc8503.net', label: 'Email Me', highlight: true },
+    { link: 'https://github.com/kingdomes', label: 'GitHub' },
+    { link: 'https://115411.xyz/', label: 'Blog' },
+    { link: 'mailto:admin@115411.xyz', label: 'Email Me', highlight: true },
   ],
   // [OPTIONAL] Group your monitors
   // If not specified, all monitors will be shown in a single list
@@ -25,45 +25,67 @@ const workerConfig: WorkerConfig = {
   // passwordProtection: 'username:password',
   // Define all your monitors here
   monitors: [
-    // Example HTTP Monitor
     {
-      // `id` should be unique, history will be kept if the `id` remains constant
-      id: 'foo_monitor',
-      // `name` is used at status page and callback message
-      name: 'My API Monitor',
-      // `method` should be a valid HTTP Method
-      method: 'POST',
-      // `target` is a valid URL
-      target: 'https://example.com',
-      // [OPTIONAL] `tooltip` is ONLY used at status page to show a tooltip
-      tooltip: 'This is a tooltip for this monitor',
-      // [OPTIONAL] `statusPageLink` is ONLY used for clickable link at status page
-      statusPageLink: 'https://example.com',
-      // [OPTIONAL] `hideLatencyChart` will hide status page latency chart if set to true
-      hideLatencyChart: false,
-      // [OPTIONAL] `expectedCodes` is an array of acceptable HTTP response codes, if not specified, default to 2xx
-      expectedCodes: [200],
-      // [OPTIONAL] `timeout` in millisecond, if not specified, default to 10000
-      timeout: 10000,
-      // [OPTIONAL] headers to be sent
-      headers: {
-        'User-Agent': 'Uptimeflare',
-        Authorization: 'Bearer YOUR_TOKEN_HERE',
-      },
-      // [OPTIONAL] body to be sent
-      body: 'Hello, world!',
-      // [OPTIONAL] if specified, the response must contains the keyword to be considered as operational.
-      responseKeyword: 'success',
-      // [OPTIONAL] if specified, the response must NOT contains the keyword to be considered as operational.
-      responseForbiddenKeyword: 'bad gateway',
-      // [OPTIONAL] if specified, will call the check proxy to check the monitor, mainly for geo-specific checks
-      // refer to docs https://github.com/lyc8503/UptimeFlare/wiki/Check-proxy-setup before setting this value
-      // currently supports `worker://` and `http(s)://` proxies
-      checkProxy: 'https://xxx.example.com OR worker://weur',
-      // [OPTIONAL] if true, the check will fallback to local if the specified proxy is down
-      checkProxyFallback: true,
-    },
-    // Example TCP Monitor
+  id: 'foo_monitor', // 唯一 ID
+  name: '🧱校园墙', // 监控名称
+  method: 'POST', // 使用 POST 方法
+  target: 'https://ong.pp.ua', // 监控目标
+  tooltip: '普通的校园墙', // 提示信息
+  statusPageLink: 'https://ong.pp.ua', // 可点击的链接
+  hideLatencyChart: true, // 显示延迟图表
+  expectedCodes: [200], // 只接受 200 状态码
+  timeout: 10000, // 10 秒超时
+  headers: { // 自定义请求头
+    'User-Agent': 'Uptimeflare',
+    Authorization: 'Bearer YOUR_TOKEN_HERE',
+  },
+  body: 'Hello, world!', // 请求体
+  responseKeyword: 'success', // 响应必须包含 "success"
+  responseForbiddenKeyword: 'bad gateway', // 响应不能包含 "bad gateway"
+  checkProxy: 'https://xxx.example.com OR worker://weur', // 使用代理检查
+  checkProxyFallback: true, // 代理失败时回退本地检查
+}
+   {
+  id: 'foo_monitor', // 唯一 ID
+  name: '📖Blog', // 监控名称
+  method: 'POST', // 使用 POST 方法
+  target: 'https://115411.xyz', // 监控目标
+  tooltip: '杂记', // 提示信息
+  statusPageLink: 'https://115411.xyz', // 可点击的链接
+  hideLatencyChart: true, // 显示延迟图表
+  expectedCodes: [200], // 只接受 200 状态码
+  timeout: 10000, // 10 秒超时
+  headers: { // 自定义请求头
+    'User-Agent': 'Uptimeflare',
+    Authorization: 'Bearer YOUR_TOKEN_HERE',
+  },
+  body: 'Hello, world!', // 请求体
+  responseKeyword: 'success', // 响应必须包含 "success"
+  responseForbiddenKeyword: 'bad gateway', // 响应不能包含 "bad gateway"
+  checkProxy: 'https://xxx.example.com OR worker://weur', // 使用代理检查
+  checkProxyFallback: true, // 代理失败时回退本地检查
+}
+   {
+  id: 'foo_monitor', // 唯一 ID
+  name: 'UptimeFlare', // 监控名称
+  method: 'POST', // 使用 POST 方法
+  target: 'https://serve.ong.pp.ua', // 监控目标
+  tooltip: '自己监控自己', // 提示信息
+  statusPageLink: 'https://serve.ong.pp.ua', // 可点击的链接
+  hideLatencyChart: true, // 显示延迟图表
+  expectedCodes: [200], // 只接受 200 状态码
+  timeout: 10000, // 10 秒超时
+  headers: { // 自定义请求头
+    'User-Agent': 'Uptimeflare',
+    Authorization: 'Bearer YOUR_TOKEN_HERE',
+  },
+  body: 'Hello, world!', // 请求体
+  responseKeyword: 'success', // 响应必须包含 "success"
+  responseForbiddenKeyword: 'bad gateway', // 响应不能包含 "bad gateway"
+  checkProxy: 'https://xxx.example.com OR worker://weur', // 使用代理检查
+  checkProxyFallback: true, // 代理失败时回退本地检查
+}    
+// Example TCP Monitor
     {
       id: 'test_tcp_monitor',
       name: 'Example TCP Monitor',

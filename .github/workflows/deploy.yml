@@ -79,11 +79,9 @@ jobs:
           BINDINGS_RAW=$(curl -sS -X GET \
             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/uptimeflare_worker/settings" \
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN")
-
+          echo "Bindings raw response: $BINDINGS_RAW"
           NEW_BINDINGS=$(echo "$BINDINGS_RAW" | jq -c '.result.bindings // [] | map(select(.type != "durable_object_namespace"))')
-
           echo "New bindings: $NEW_BINDINGS"
-
           curl -sS -X PATCH \
             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/uptimeflare_worker/settings" \
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
@@ -96,42 +94,34 @@ jobs:
         run: |
           terraform init
           echo "Checking resources before import..."
-
           KV_ID=$(curl -sS "https://api.cloudflare.com/client/v4/accounts/$TF_VAR_CLOUDFLARE_ACCOUNT_ID/storage/kv/namespaces?per_page=100" \
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | \
             jq -r '.result[] | select(.title=="uptimeflare_kv") | .id')
-
           if [ -n "$KV_ID" ]; then
             echo "Importing KV namespace..."
             terraform import cloudflare_workers_kv_namespace.uptimeflare_kv "$TF_VAR_CLOUDFLARE_ACCOUNT_ID/$KV_ID" || echo "KV import failed, continuing."
           else
             echo "KV namespace not found, skipping import."
           fi
-
           WORKER_EXISTS=$(curl -sS -X GET \
             "https://api.cloudflare.com/client/v4/accounts/$TF_VAR_CLOUDFLARE_ACCOUNT_ID/workers/scripts/uptimeflare_worker" \
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | jq -r '.success')
-
           if [ "$WORKER_EXISTS" = "true" ]; then
             echo "Importing Worker script..."
             terraform import cloudflare_worker_script.uptimeflare "$TF_VAR_CLOUDFLARE_ACCOUNT_ID/uptimeflare_worker" || echo "Worker script import failed, continuing."
           else
             echo "Worker script not found, skipping import."
           fi
-
           PAGES_EXISTS=$(curl -sS -X GET \
             "https://api.cloudflare.com/client/v4/accounts/$TF_VAR_CLOUDFLARE_ACCOUNT_ID/pages/projects/uptimeflare" \
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | jq -r '.success')
-
           if [ "$PAGES_EXISTS" = "true" ]; then
             echo "Importing Pages project..."
             terraform import cloudflare_pages_project.uptimeflare "$TF_VAR_CLOUDFLARE_ACCOUNT_ID/uptimeflare" || echo "Pages project import failed, continuing."
           else
             echo "Pages project not found, skipping import."
           fi
-
           echo "Skipping import of cloudflare_worker_cron_trigger (unsupported by provider)."
-
           terraform apply -auto-approve -input=false
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -143,16 +133,14 @@ jobs:
           CURRENT_BINDINGS_RAW=$(curl -sS -X GET \
             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/uptimeflare_worker/settings" \
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN")
-
-          CURRENT_BINDINGS=$(echo "$CURRENT_BINDINGS_RAW" | jq -c '.result.bindings // []')
-
-          NEW_BINDINGS=$(echo "[{\"type\":\"durable_object_namespace\",\"name\":\"REMOTE_CHECKER_DO\",\"class_name\":\"RemoteChecker\"}] + $CURRENT_BINDINGS" | jq -c 'add')
-
+          echo "Current bindings raw response: $CURRENT_BINDINGS_RAW"
+          CURRENT_BINDINGS=$(echo "$CURRENT_BINDINGS_RAW" | jq '.result.bindings // []')
+          NEW_BINDINGS=$(jq -n --argjson current "$CURRENT_BINDINGS" '[{"type":"durable_object_namespace","name":"REMOTE_CHECKER_DO","class_name":"RemoteChecker"}] + $current')
+          echo "New bindings to set: $NEW_BINDINGS"
           curl -sS -X PATCH \
             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/uptimeflare_worker/settings" \
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
             -F "settings={\"bindings\":$NEW_BINDINGS}"
-
           curl -sS -X PATCH \
             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/uptimeflare_worker/script-settings" \
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \

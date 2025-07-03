@@ -13,7 +13,7 @@ const pageConfig: PageConfig = {
   // If not specified, all monitors will be shown in a single list
   // If specified, monitors will be grouped and ordered, not-listed monitors will be invisble (but still monitored)
   group: {
-    '🌐 Public': ['campus_wall', 'blog_monitor', 'uptimeflare_monitor'],
+    '🌐 Public': ['campus_wall', 'blog_monitor', 'uptimeflare_monitor', 'img_monitor'],
     '🔐 Private': ['router_ssh'],
   },
 }
@@ -47,6 +47,20 @@ const workerConfig: WorkerConfig = {
       target: 'https://115411.xyz',
       tooltip: '个人博客',
       statusPageLink: 'https://115411.xyz',
+      hideLatencyChart: false,
+      expectedCodes: [200],
+      timeout: 10000,
+      headers: { 'User-Agent': 'Uptimeflare' },
+      responseForbiddenKeyword: 'bad gateway',
+      checkProxyFallback: true,
+    },
+    {
+      id: 'img_monitor',
+      name: '🗃 People の ImgHub',
+      method: 'GET',
+      target: 'https://img.115411.xyz',
+      tooltip: '图床',
+      statusPageLink: 'https://serve.ong.pp.ua',
       hideLatencyChart: false,
       expectedCodes: [200],
       timeout: 10000,

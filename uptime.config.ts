@@ -28,7 +28,7 @@ const workerConfig: WorkerConfig = {
     {
   id: 'foo_monitor',
   name: '🧱校园墙',
-  method: 'GET',
+  method: 'HEAD',
   target: 'https://ong.pp.ua',
   tooltip: '普通的校园墙',
   statusPageLink: 'https://ong.pp.ua',
@@ -46,7 +46,7 @@ const workerConfig: WorkerConfig = {
    {
   id: 'foo_monitor',
   name: '📖Blog',
-  method: 'GET',
+  method: 'HEAD',
   target: 'https://ong.pp.ua',
   tooltip: '杂记',
   statusPageLink: 'https://115411.xyz',
@@ -64,7 +64,7 @@ const workerConfig: WorkerConfig = {
    {
   id: 'foo_monitor',
   name: 'UptimeFlare',
-  method: 'GET',
+  method: 'HEAD',
   target: 'https://serve.ong.pp.ua',
   tooltip: '普通的校园墙',
   statusPageLink: 'https://serve.ong.pp.ua',
@@ -89,7 +89,7 @@ const workerConfig: WorkerConfig = {
       target: '52.65.31.188:22',
       tooltip: 'TCP_PING',
       statusPageLink: '',
-      timeout: 5000,
+      timeout: 50000,
     },
   ],
   notification: {

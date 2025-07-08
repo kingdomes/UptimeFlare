@@ -14,7 +14,7 @@ const pageConfig: PageConfig = {
   // If specified, monitors will be grouped and ordered, not-listed monitors will be invisble (but still monitored)
   group: {
     '🌐 Public': ['campus_wall', 'blog_monitor', 'uptimeflare_monitor', 'img_monitor', 'mail_monitor'],
-    '🔐 Private': ['router_ssh'],
+    '🔐 Private': ['router_ssh', 'fnos_ssh', 'home_ssh'],
   },
 }
 
@@ -116,6 +116,24 @@ const workerConfig: WorkerConfig = {
       name: '🔐 Router SSH',
       method: 'TCP_PING',
       target: '52.65.31.188:22',
+      tooltip: 'SSH 可用性检测',
+      statusPageLink: '',
+      timeout: 50000,
+    },
+    {
+      id: 'home_ssh',
+      name: '🔐 Home SSH',
+      method: 'TCP_PING',
+      target: '[2408:8352:4000:2CAE:F30:80F8:184D:44A2]:22',
+      tooltip: 'SSH 可用性检测',
+      statusPageLink: '',
+      timeout: 50000,
+    },
+    {
+      id: 'fnos_ssh',
+      name: '🔐 飞牛私有云 SSH',
+      method: 'TCP_PING',
+      target: 'cloud.774895.xyz:22',
       tooltip: 'SSH 可用性检测',
       statusPageLink: '',
       timeout: 50000,
